@@ -17,7 +17,7 @@ class CommBot {
 
   void begin(unsigned long baudrate = 115200);
   void spinOnce();
-  void advertise(const String& topic, Callback cb);
+  void subscribe(const String& topic, Callback cb);
   void publish(const String& topic, JsonObject& msg);
   void publishRaw(const String& json);
   bool isConnected();

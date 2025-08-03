@@ -6,7 +6,7 @@ CommBot bot(Serial);
 void setup() {
   bot.begin(115200);
 
-  bot.advertise("led", [](JsonObject& msg) {
+  bot.subscribe("led", [](JsonObject& msg) {
     int state = msg["value"];
     digitalWrite(13, state);
   });

@@ -32,7 +32,7 @@ void CommBot::_sendHello() {
   }
 }
 
-void CommBot::advertise(const String& topic, Callback cb) {
+void CommBot::subscribe(const String& topic, Callback cb) {
   if (_subCount < COMMBOT_MAX_SUB_COUNT) {
     _subs[_subCount++] = { topic, cb };
   }
