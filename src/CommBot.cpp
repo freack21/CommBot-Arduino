@@ -9,7 +9,8 @@ CommBot::CommBot(HardwareSerial& serial, unsigned long baudrate)
   : _serial(serial), _baudrate(baudrate), _bufferIndex(0), _subCount(0) {}
 
 void CommBot::begin(unsigned long baudrate) {
-  _baudrate = baudrate;
+  if (baudrate != -1) _baudrate = baudrate;
+
   _serial.begin(_baudrate);
 
   _connected = false;

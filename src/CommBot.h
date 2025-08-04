@@ -10,41 +10,41 @@
 #define HANDSHAKE_INTERVAL 1000
 
 class CommBot {
- public:
-  using Callback = void (*)(const JsonObject&);
+  public:
+    using Callback = void (*)(const JsonObject&);
 
-  CommBot(HardwareSerial& serial, unsigned long baudrate = 115200);
+    CommBot(HardwareSerial& serial, unsigned long baudrate = 115200);
 
-  void begin(unsigned long baudrate = 115200);
-  void spinOnce();
-  void log(String msg);
-  void subscribe(const String& topic, Callback cb);
-  void publish(const String& topic, JsonDocument& msg);
-  void publishRaw(const String& json);
-  bool isConnected();
-  void setHeartbeatInterval(unsigned long interval);
-  void setMaxHeartbeatLossTime(unsigned long interval);
+    void begin(unsigned long baudrate = -1);
+    void spinOnce();
+    void log(String msg);
+    void subscribe(const String& topic, Callback cb);
+    void publish(const String& topic, JsonDocument& msg);
+    void publishRaw(const String& json);
+    bool isConnected();
+    void setHeartbeatInterval(unsigned long interval);
+    void setMaxHeartbeatLossTime(unsigned long interval);
 
 
- private:
-  HardwareSerial& _serial;
-  unsigned long _baudrate;
-  char _buffer[COMMBOT_BUFFER_SIZE];
-  size_t _bufferIndex;
+  private:
+    HardwareSerial& _serial;
+    unsigned long _baudrate;
+    char _buffer[COMMBOT_BUFFER_SIZE];
+    size_t _bufferIndex;
 
-  struct Subscriber {
-    String topic;
-    Callback callback;
-  };
+    struct Subscriber {
+      String topic;
+      Callback callback;
+    };
 
-  Subscriber _subs[COMMBOT_MAX_SUB_COUNT];
-  int _subCount;
+    Subscriber _subs[COMMBOT_MAX_SUB_COUNT];
+    int _subCount;
 
-  bool _connected = false;
-  unsigned long _lastHelloTime = 0;
-  void _sendHello();
+    bool _connected = false;
+    unsigned long _lastHelloTime = 0;
+    void _sendHello();
 
-  void handleMessage(const JsonObject& msg);
+    void handleMessage(const JsonObject& msg);
 };
 
 #endif
