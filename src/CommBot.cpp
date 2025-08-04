@@ -1,7 +1,9 @@
 #include "CommBot.h"
 
-unsigned long _lastHeartbeat = 0;
+unsigned long _lastSlaveHeartbeat = 0;
+unsigned long _lastMasterHeartbeat = 0;
 unsigned long _heartbeatInterval = 1000;
+unsigned long _maxHeartbeatLossTime = 10000;
 
 CommBot::CommBot(HardwareSerial& serial, unsigned long baudrate)
   : _serial(serial), _baudrate(baudrate), _bufferIndex(0), _subCount(0) {}
@@ -22,10 +24,21 @@ void CommBot::setHeartbeatInterval(unsigned long interval) {
   _heartbeatInterval = interval;
 }
 
+void CommBot::setMaxHeartbeatLossTime(unsigned long interval) {
+  _maxHeartbeatLossTime = interval;
+}
+
+void CommBot::log(String msg) {
+  JsonDocument doc;
+  doc["log"] = "[slave] " + msg;
+  serializeJson(doc, _serial);
+  _serial.println();
+}
+
 void CommBot::_sendHello() {
   if (!_connected && millis() - _lastHelloTime > HANDSHAKE_INTERVAL) {
-    StaticJsonDocument<64> doc;
-    doc["handshake"] = "hello";
+    JsonDocument doc;
+    doc["handshake"] = "slave";
     serializeJson(doc, _serial);
     _serial.println();
     _lastHelloTime = millis();
@@ -46,7 +59,7 @@ void CommBot::spinOnce() {
     if (c == '\n') {
       _buffer[_bufferIndex] = '\0';
 
-      StaticJsonDocument<COMMBOT_BUFFER_SIZE> doc;
+      JsonDocument doc;
       DeserializationError err = deserializeJson(doc, _buffer);
       if (!err) {
         JsonObject obj = doc.as<JsonObject>();
@@ -62,21 +75,35 @@ void CommBot::spinOnce() {
   }
 
   unsigned long now = millis();
-  if (now - _lastHeartbeat >= _heartbeatInterval) {
-    StaticJsonDocument<64> heartbeatDoc;
-    heartbeatDoc["heartbeat"] = true;
+  if (now - _lastSlaveHeartbeat >= _heartbeatInterval) {
+    JsonDocument heartbeatDoc;
+    heartbeatDoc["heartbeat"] = "slave";
     serializeJson(heartbeatDoc, _serial);
     _serial.println();
 
-    _lastHeartbeat = now;
+    _lastSlaveHeartbeat = now;
+  }
+  now = millis();
+  if (_connected && now - _lastMasterHeartbeat >= _maxHeartbeatLossTime) {
+    _connected = false;
+    _lastMasterHeartbeat = now;
   }
 }
 
 void CommBot::handleMessage(const JsonObject& msg) {
   if (msg.containsKey("handshake")) {
     String val = msg["handshake"].as<String>();
-    if (val == "hello_ack") {
+    if (val == "master") {
       _connected = true;
+      _lastMasterHeartbeat = millis();
+    }
+    return;
+  }
+
+  if (msg.containsKey("heartbeat")) {
+    String val = msg["heartbeat"].as<String>();
+    if (val == "master") {
+      _lastMasterHeartbeat = millis();
     }
     return;
   }
@@ -91,27 +118,18 @@ void CommBot::handleMessage(const JsonObject& msg) {
       break;
     }
   }
-
-  if (msg.containsKey("id")) {
-    sendAck(msg["id"].as<String>());
-  }
 }
 
-void CommBot::sendAck(const String& id) {
-  StaticJsonDocument<128> ackDoc;
-  ackDoc["ack"] = id;
-  serializeJson(ackDoc, _serial);
-  _serial.println();
-}
+void CommBot::publish(const String& topic, JsonDocument& msg) {
+  JsonObject _msg = msg.as<JsonObject>();
 
-void CommBot::publish(const String& topic, JsonObject& msg) {
-  msg["topic"] = topic;
+  _msg["topic"] = topic;
 
-  if (!msg.containsKey("id")) {
-    msg["id"] = millis();
+  if (!_msg.containsKey("id")) {
+    _msg["id"] = millis();
   }
 
-  serializeJson(msg, _serial);
+  serializeJson(_msg, _serial);
   _serial.println();
 }
 

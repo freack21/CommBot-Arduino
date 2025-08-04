@@ -7,21 +7,23 @@
 #define COMMBOT_BUFFER_SIZE 512
 #define COMMBOT_MAX_SUB_COUNT 10
 #define COMMBOT_MAX_PUB_COUNT 10
-#define HANDSHAKE_INTERVAL 2000
+#define HANDSHAKE_INTERVAL 1000
 
 class CommBot {
  public:
-  using Callback = void (*)(JsonObject&);
+  using Callback = void (*)(const JsonObject&);
 
   CommBot(HardwareSerial& serial, unsigned long baudrate = 115200);
 
   void begin(unsigned long baudrate = 115200);
   void spinOnce();
+  void log(String msg);
   void subscribe(const String& topic, Callback cb);
-  void publish(const String& topic, JsonObject& msg);
+  void publish(const String& topic, JsonDocument& msg);
   void publishRaw(const String& json);
   bool isConnected();
   void setHeartbeatInterval(unsigned long interval);
+  void setMaxHeartbeatLossTime(unsigned long interval);
 
 
  private:
@@ -43,7 +45,6 @@ class CommBot {
   void _sendHello();
 
   void handleMessage(const JsonObject& msg);
-  void sendAck(const String& id);
 };
 
 #endif
